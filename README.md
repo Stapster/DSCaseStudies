@@ -1,6 +1,6 @@
 # DSCaseStudies
 
-# TODO Setup Branches
+# TODO Setup Branches --> stefan ist noch nicht aktuell
 
-# TODO Test Pushing
+# Test Pushing --> works fine
 
