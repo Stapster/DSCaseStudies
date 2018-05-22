@@ -1,6 +1,6 @@
 # DSCaseStudies
 
-# TODO Setup Branches --> stefan ist noch nicht aktuell
-
-# Test Pushing --> works fine
+# Initializing Repository
+# Setup Branches - check
+# Test Push/Merge - check
 
