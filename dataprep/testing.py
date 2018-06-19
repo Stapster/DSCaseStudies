@@ -5,11 +5,11 @@ import sklearn.preprocessing as skp
 import numpy
 
 
-csv_file = open("BrentDataset.csv")
+csv_file = open("BrentDataset_Original.csv")
 reader = csv.reader(csv_file)
 #print(next(reader))
 
-dta_v = pd.read_csv("BrentDataset.csv")
+dta_v = pd.read_csv("BrentDataset_Original.csv")
 
 def dta_vanilla ():
     return dta_v
@@ -17,7 +17,7 @@ def dta_vanilla ():
 
 def dta_preparation():
     dta = dta_v.reset_index()   #setzt Index zurück
-    #print(dta.head())
+    print(dta.head())
     date_split = dta["index"].str.split(expand=True)    #neuer Datensatz aus Index, gesplittet in Monat und Tag
     del dta["index"]                                    #löscht Spalte Index aus ursprünglichem Datensatz
     dta = pd.concat((date_split, dta), axis=1)          #Verbindet beide Datensätze
@@ -55,7 +55,7 @@ print ("Before:")
 print(dta_vanilla().head())
 print(dta_vanilla().info())
 print()
-print ("Clean data:")
+print("Clean data:")
 print(dta_preparation().head())
 print(dta_preparation().info())
 print()
