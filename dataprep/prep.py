@@ -17,7 +17,7 @@ def dta_vanilla ():
 
 def dta_preparation():
     dta = dta_v.reset_index()   #setzt Index zurück
-    print(dta.head())
+    #print(dta.head())
     date_split = dta["index"].str.split(expand=True)    #neuer Datensatz aus Index, gesplittet in Monat und Tag
     del dta["index"]                                    #löscht Spalte Index aus ursprünglichem Datensatz
     dta = pd.concat((date_split, dta), axis=1)          #Verbindet beide Datensätze
@@ -64,4 +64,4 @@ print(dta_rescaled(dta_preparation()).head())
 
 
 plt.show(plotdta(dta_preparation()))                        #Visualisierung Rohdaten
-plt.show(plotdta(dta_rescaled(dta_preparation())))             #Visualisierung skalierte Daten
+#plt.show(plotdta(dta_rescaled(dta_preparation())))             #Visualisierung skalierte Daten
