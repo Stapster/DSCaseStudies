@@ -1,8 +1,11 @@
 # DSCaseStudies
 
-# Initializing Repository
-# Setup Branches - check
-# Test Push/Merge - check
+# Aktuelle Themen:
+# Modelle implementieren
+# Loss/Score-Funktionen ggf. selber schreiben
+# Modelle speichern
+# Modellvergleich implemtieren
+# ... ?
 
-# Test Kommentar
+
 
