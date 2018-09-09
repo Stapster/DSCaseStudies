@@ -1,116 +1,154 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pylab as plt
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
 
-# TODO Data Split
-
-data = pd.read_csv("BrentDataset_prep.csv")
-data.index = pd.to_datetime(data["Date"])   # Datetime als index
-data = data.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
+# TODO % to decimal schon in DataFrame.py durchführen
 
 # Einfache Analysen mit Close-Preis
-#closeData = data["Close"]
+# closeData = data["Close"]
 # Indizierung
-#print(closeData['2010-11-1':"2010-11-15"])
-#print(closeData[:"2008-02-10"])
-#print(closeData["2008"])
-#high_prices = data.loc[:, "High"].values
-#low_prices = data.loc[:, "Low"].values
-#mid_prices = (high_prices+low_prices)/2.0
-#split = int(mid_prices.size*0.8)
-#train_data = mid_prices[:split]
-#test_data = mid_prices[split:]
+# print(closeData['2010-11-1':"2010-11-15"])
+# print(closeData[:"2008-02-10"])
+# print(closeData["2008"])
+# high_prices = data.loc[:, "High"].values
+# low_prices = data.loc[:, "Low"].values
+# mid_prices = (high_prices+low_prices)/2.0
+# split = int(mid_prices.size*0.8)
+# train_data = mid_prices[:split]
+# test_data = mid_prices[split:]
 
-# Analyse der Preisveränderung
-range_prices = data["High"]-data["Low"]
-plt.title("Price-Ranges")
-plt.plot(range_prices)
-plt.show()
 
-# Berechnung des Durchschnittspreises pro Tag
-data["Avg"] = pd.DataFrame((data["High"]+data["Low"])/2.0, index=data.index)
-data_original = data["Avg"]
+class OilData:
+    # Test Class Oil Data
 
-# Anpassung % auf dezimal
-data["Change"] = data["Change"]/100
+    def __init__(self):
+        # Daten einlesen, überflüssige Spalten entfernen und Index festlegen
+        self.data = pd.read_csv("BrentDataset_prep.csv")
+        self.data.index = pd.to_datetime(self.data["Date"])
+        self.data = self.data.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
+        self.data_original = pd.read_csv("BrentDataset_prep.csv")
+        self.data_original.index = pd.to_datetime(self.data_original["Date"])
+        self.data_original = self.data_original.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
+        self.scaler_price = MinMaxScaler()
+        self.scaler_volume = MinMaxScaler()
 
-# Skalierung der Daten: fit_transform denkbar
-scaler_price = MinMaxScaler()
-scaler_price.fit(data["Avg"].values.reshape(-1, 1))
-data[["Low", "High", "Open", "Close", "Change", "Avg"]] = \
-    scaler_price.transform(data[["Low", "High", "Open", "Close", "Change", "Avg"]])
+    def calculate_avg(self):
+        # Berechnet tägliche Durchschnittspreise anhand High und Low
+        self.data["Avg"] = pd.DataFrame((self.data["High"] + self.data["Low"]) / 2.0, index=self.data.index)
+        self.data_original["Avg"] = pd.DataFrame((self.data["High"] + self.data["Low"]) / 2.0, index=self.data.index)
 
-# Idee hinter dem 2. Scaler: Anderer Datentyp, getrennte Transformation macht ggf. Sinn
-scaler_volume = MinMaxScaler()
-scaler_volume.fit(data["Volume"].values.reshape(-1, 1))
-data["Volume"] = scaler_volume.transform(data["Volume"].values.reshape(-1, 1))
+        # Anpassung % auf dezimal -- ggf. schon in DataFrame machen
+        self.data["Change"] = self.data["Change"]/100
 
-print("// Transformed Data")
-print(data[["Low", "High", "Open", "Close", "Change", "Volume", "Avg"]].head())
+    def normalize(self):
+        # Skalierung der Daten: fit_transform denkbar
+        self.scaler_price.fit(self.data["Avg"].values.reshape(-1, 1))
 
-# Glättung Marktvolumen
-mAvg_vol = data["Volume"].rolling(window=20, center=False).mean()
-plt.title("Market-Volume (moving AVG 20d lag)")
-plt.plot(data["Avg"], label="Avg-Price")
-plt.plot(mAvg_vol, label="Volume")
-plt.legend(loc="lower left")
-plt.show()
+        self.data[["Low", "High", "Open", "Close", "Change", "Avg"]] = \
+            self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Change", "Avg"]])
 
-# Tests aus DataAnalysis.py
-movingAvg = data["Avg"].rolling(window=10, center=False).mean()
-movingAvg_diff = data["Avg"] - movingAvg
+        # Idee hinter dem 2. Scaler: Anderer Wertebereich, getrennte Transformation macht ggf. Sinn
+        self.scaler_volume.fit(self.data["Volume"].values.reshape(-1, 1))
+        self.data["Volume"] = self.scaler_volume.transform(self.data["Volume"].values.reshape(-1, 1))
 
-ewa = data["Avg"].ewm(halflife=10).mean()
-ewa_diff = data["Avg"] - ewa
-ewa.dropna(inplace=True)
+        # print("// Transformed Data")
+        # print(self.data[["Low", "High", "Open", "Close", "Change", "Volume", "Avg"]].head())
 
-# Vergleich Moving AVG Exp Moving AVG
-plt.title("Moving AVG vs EXP-Moving AVG")
-plt.plot(movingAvg, label="MAVG", color="green")
-plt.plot(ewa, label="EXP-MAVG", color="red")
-plt.plot(data["Avg"], color="grey")
-plt.legend(loc="lower left")
-plt.show()
 
-# Dekomposition
-# Notiz: ExpMovingAvg mit 5 Tagen lag sieht fast wie AVG mit 10 aus, was besser ist muss später geprüft werden
-plt.subplot(311)
-plt.plot(data["Avg"], label='Original')
-plt.legend(loc='lower left')
-plt.title("Original-Data")
-plt.subplot(312)
-plt.plot(ewa, label='EXP')
-plt.plot(movingAvg, color="red", label="AVG")
-plt.plot(data["Avg"], color="grey", label="Original")
-plt.legend(loc='lower left')
-plt.title("Trend (lag 10)")
-plt.subplot(313)
-plt.plot(ewa_diff, label='EXP')
-plt.plot(movingAvg_diff, color="red", label="AVG")
-plt.legend(loc='lower left')
-plt.title("Residuals (lag 10)")
-plt.tight_layout()
-plt.show()
+def pricerange_analysis(inputdata):
+    # Analyse der Preisveränderung
+    range_prices = inputdata["High"]-inputdata["Low"]
+    plt.title("Price-Ranges")
+    plt.plot(range_prices)
+    plt.show()
 
-#ARIMA-Modell aus DataAnalysis.py
 
-model = ARIMA(data["Avg"], order=(2, 1, 2))
-results_ARIMA = model.fit(disp=-1)
-plt.plot(movingAvg_diff)
-plt.plot(results_ARIMA.fittedvalues, color='red')
-plt.title('RSS: %.4f'% sum((results_ARIMA.fittedvalues-movingAvg_diff)**2))
-plt.show()
+def smooth_volume(inputdata):
+    # Marktvolumenentwicklung glätten und anzeigen
+    mavg_vol = inputdata["Volume"].rolling(window=40, center=False).mean()
+    plt.title("Market-Volume (moving AVG 40d lag)")
+    plt.plot(inputdata["Avg"], label="Avg-Price")
+    plt.plot(mavg_vol, label="Volume")
+    plt.legend(loc="lower left")
+    plt.show()
 
-predictions_ARIMA_diff = pd.Series(results_ARIMA.fittedvalues, copy=True)
-predictions_ARIMA_diff_cumsum = predictions_ARIMA_diff.cumsum()
-predictions_ARIMA_scaled = pd.Series(data["Avg"].ix[0], index=data["Avg"].index)
-predictions_ARIMA_scaled = predictions_ARIMA_scaled.add(predictions_ARIMA_diff_cumsum,fill_value=0)
-predictions_ARIMA = scaler_price.inverse_transform(predictions_ARIMA_scaled.values.reshape(-1, 1))
-predictions_ARIMA = pd.DataFrame(predictions_ARIMA, index=data.index)
 
-plt.title("ARIMA-Fit")
-plt.plot(predictions_ARIMA)
-plt.plot(data_original, color="grey")
-plt.show()
+def decomposition(inputdata):
+    # Dekomposition
+    # Notiz: ExpMovingAvg mit 5 Tagen lag sieht fast wie AVG mit 10 aus, was besser ist muss später geprüft werden
+
+    # Moving Average
+    movingavg = inputdata["Avg"].rolling(window=10, center=False).mean()
+    movingavg_diff = inputdata["Avg"] - movingavg
+
+    # Exponential Weighted Moving Average
+    ewa = inputdata["Avg"].ewm(halflife=10).mean()
+    ewa_diff = inputdata["Avg"] - ewa
+    ewa.dropna(inplace=True)
+
+    # Plot zum Vergleich
+    plt.subplot(311)
+    plt.plot(inputdata["Avg"], label='Original')
+    plt.legend(loc='lower left')
+    plt.title("Original-Data")
+    plt.subplot(312)
+    plt.plot(ewa, label='EXP')
+    plt.plot(movingavg, color="red", label="AVG")
+    plt.plot(inputdata["Avg"], color="grey", label="Original")
+    plt.legend(loc='lower left')
+    plt.title("Trend (lag 10)")
+    plt.subplot(313)
+    plt.plot(ewa_diff, label='EXP')
+    plt.plot(movingavg_diff, color="red", label="AVG")
+    plt.legend(loc='lower left')
+    plt.title("Residuals (lag 10)")
+    plt.tight_layout()
+    plt.show()
+
+
+def arima_test(inputclass):
+    # ARIMA-Modell aus DataAnalysis.py
+    # TODO Fehler finden und beheben
+    data = inputclass.data
+    data_original = inputclass.data_original
+    scaler_price = inputclass.scaler_price
+
+    movingavg = data["Avg"].rolling(window=10, center=False).mean()
+    movingavg_diff = data["Avg"] - movingavg
+
+    model = ARIMA(data["Avg"], order=(2, 1, 2))
+    results_arima = model.fit(disp=-1)
+    plt.plot(movingavg_diff)
+    plt.plot(results_arima.fittedvalues, color='red')
+    plt.title('RSS: %.4f' % sum((results_arima.fittedvalues-movingavg_diff)**2))
+    # plt.show()
+
+    predictions_arima_diff = pd.Series(results_arima.fittedvalues, copy=True)
+    predictions_arima_diff_cumsum = predictions_arima_diff.cumsum()
+    predictions_arima_scaled = pd.Series(data["Avg"].ix[0], index=data["Avg"].index)
+    predictions_arima_scaled = predictions_arima_scaled.add(predictions_arima_diff_cumsum, fill_value=0)
+    predictions_arima = scaler_price.inverse_transform(predictions_arima_scaled.values.reshape(-1, 1))
+    predictions_arima = pd.DataFrame(predictions_arima, index=data.index)
+
+    plt.title("ARIMA-Fit")
+    plt.plot(predictions_arima)
+    plt.plot(data_original, color="grey")
+    # plt.show()
+
+
+def run_all_tests():
+    oilprices = OilData()
+
+    pricerange_analysis(oilprices.data)
+
+    oilprices.calculate_avg()
+    oilprices.normalize()
+
+    smooth_volume(oilprices.data)
+
+    decomposition(oilprices.data)
+    arima_test(oilprices)
+
+
+run_all_tests()
