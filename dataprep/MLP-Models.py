@@ -80,8 +80,8 @@ def mlp_windowed():
     model.add(Dense(8, activation='relu'))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error', optimizer='adam')
-    history = model.fit(trainX, trainY, epochs=400, batch_size=2, verbose=2)
-
+    history = model.fit(trainX, trainY, epochs=400, batch_size=2, validation_data=(testX, testY), verbose=2)
+    # Validation-Data attribut und history ikl. Plot ist manuell eingefügt
     pyplot.plot(history.history['loss'], label='train')
     pyplot.plot(history.history['val_loss'], label='test')
     pyplot.legend()
@@ -109,6 +109,13 @@ def mlp_windowed():
     plt.plot(testPredictPlot, label="test prediction", color="red")
     plt.legend(loc='lower left')
     plt.show()
+
+    # newData = numpy.array([[65.5], [66.8], [67.0], [64.6], [65.0], [65.8]])
+    # newPrediction = model.predict(newData)
+    # plt.plot(newData, label="original", color="grey")
+    # plt.plot(newPrediction, label="prediction", color="green")
+    # plt.legend(loc='lower left')
+    # plt.show()
 
 
 mlp_windowed()
