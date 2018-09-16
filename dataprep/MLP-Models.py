@@ -17,6 +17,19 @@ oil_prices.calculate_avg()
 dataset = oil_prices.data["Avg"].values
 dataset = dataset.reshape(dataset.shape[0], 1)
 
+# Gernerierung [-1,1] - Werte für Change
+# change = oil_prices.data["Change"]
+# c_arr = []
+# for p in change[0:5]:
+#     if p >= 0:
+#         print(p, ' // ', 1)
+#         c_arr.append(1)
+#     else:
+#         print(p, ' // ', -1)
+#         c_arr.append(-1)
+#
+# print(c_arr)
+
 # fix random seed for reproducibility
 numpy.random.seed(7)
 
@@ -26,14 +39,26 @@ test_size = len(dataset) - train_size
 train, test = dataset[0:train_size, :], dataset[train_size:len(dataset), :]
 print(len(train), len(test))
 
+
 # convert an array of values into a dataset matrix
-def create_dataset(dataset, look_back=1):
+def create_dataset_old(dataset, look_back=1, look_forward=1):
     dataX, dataY = [], []
-    for i in range(len(dataset)-look_back-1):
+    for i in range(len(dataset)-look_back-(look_forward-1)):
         a = dataset[i:(i+look_back), 0]
         dataX.append(a)
-        dataY.append(dataset[i + look_back, 0])
+        dataY.append(dataset[i + look_back + (look_forward-1), 0])
     return numpy.array(dataX), numpy.array(dataY)
+
+
+def create_dataset(dataset, look_back=1, look_forward=1, sequence=1):
+    dataX, dataY = [], []
+    for i in range(len(dataset)-look_back-(look_forward-1)-(sequence-1)):
+        a = dataset[i:(i+look_back), 0]
+        dataX.append(a)
+        b = dataset[(i + look_back + (look_forward-1)):(i + look_back + (look_forward-1)+(sequence-1)+1), 0]
+        dataY.append(b)
+    return numpy.array(dataX), numpy.array(dataY)
+
 
 def mlp_basic ():
     # reshape into X=t and Y=t+1
@@ -69,18 +94,21 @@ def mlp_basic ():
     plt.plot(testPredictPlot)
     plt.show()
 
+
 def mlp_windowed():
     # reshape dataset
-    look_back = 3
-    trainX, trainY = create_dataset(train, look_back)
-    testX, testY = create_dataset(test, look_back)
+    look_back = 5
+    look_forward = 1
+    sequence = 1
+    trainX, trainY = create_dataset(train, look_back, look_forward, sequence)
+    testX, testY = create_dataset(test, look_back, look_forward, sequence)
     # create and fit Multilayer Perceptron model
     model = Sequential()
     model.add(Dense(12, input_dim=look_back, activation='relu'))
     model.add(Dense(8, activation='relu'))
-    model.add(Dense(1))
+    model.add(Dense(sequence))
     model.compile(loss='mean_squared_error', optimizer='adam')
-    history = model.fit(trainX, trainY, epochs=400, batch_size=2, validation_data=(testX, testY), verbose=2)
+    history = model.fit(trainX, trainY, epochs=200, batch_size=2, validation_data=(testX, testY), verbose=2)
     # Validation-Data attribut und history ikl. Plot ist manuell eingefügt
     pyplot.plot(history.history['loss'], label='train')
     pyplot.plot(history.history['val_loss'], label='test')
@@ -118,4 +146,15 @@ def mlp_windowed():
     # plt.show()
 
 
+# mlp_basic
 mlp_windowed()
+
+test_original = train[0:5]
+test_1X, test_1Y = create_dataset_test(test_original, 2, 1, 3)
+
+# print(test_original)
+# print('--------')
+# print('X-Data', test_1X)
+# print('--------')
+# print('Y-Data', test_1Y)
+
