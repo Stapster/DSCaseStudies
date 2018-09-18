@@ -14,24 +14,11 @@ import dataprep.DataAnalysis2 as source
 oil_prices = source.OilData()
 oil_prices.calculate_avg()
 # oil_prices.normalize()
-dataset = oil_prices.data["Avg"].values
+oil_prices.calculate_trend()
+dataset = oil_prices.data["Trend"].values
 dataset = dataset.reshape(dataset.shape[0], 1)
 
-# Generierung [-1,1] - Werte für Change
-# change = oil_prices.data["Change"]
-# c_arr = []
-# for p in change[0:5]:
-#     if p >= 0:
-#         print(p, ' // ', 1)
-#         c_arr.append(1)
-#     else:
-#         print(p, ' // ', -1)
-#         c_arr.append(-1)
-#
-# print(c_arr)
-
-# fix random seed for reproducibility
-numpy.random.seed(7)
+print(oil_prices.data[["Trend", "Change"]].head())
 
 # split into train and test sets
 train_size = int(len(dataset) * 0.67)
@@ -138,20 +125,41 @@ def mlp_windowed():
     plt.legend(loc='lower left')
     plt.show()
 
-    # newData = numpy.array([[65.5], [66.8], [67.0], [64.6], [65.0], [65.8]])
-    # newPrediction = model.predict(newData)
-    # plt.plot(newData, label="original", color="grey")
-    # plt.plot(newPrediction, label="prediction", color="green")
-    # plt.legend(loc='lower left')
-    # plt.show()
+
+def mlp_windowed_trend():
+    # reshape dataset
+    look_back = 10
+    look_forward = 1
+    sequence = 1
+    trainX, trainY = create_dataset(train, look_back, look_forward, sequence)
+    testX, testY = create_dataset(test, look_back, look_forward, sequence)
+
+    model = Sequential()
+    model.add(Dense(12, input_dim=look_back, activation='relu'))
+    model.add(Dense(8, activation='relu'))
+    model.add(Dense(40, activation='relu'))
+    model.add(Dense(sequence, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    history = model.fit(trainX, trainY, epochs=400, batch_size=20, validation_data=(testX, testY), verbose=1)
+    # Validation-Data attribut und history ikl. Plot ist manuell eingefügt
+    pyplot.plot(history.history['acc'], label='train')
+    pyplot.plot(history.history['val_acc'], label='test')
+    pyplot.legend()
+    pyplot.show()
+
+    # Estimate model performance
+    trainScore = model.evaluate(trainX, trainY, verbose=0)
+    print('Train Score: ', trainScore)
+    testScore = model.evaluate(testX, testY, verbose=0)
+    print('Test Score: ', testScore)
 
 
-# mlp_basic
+# mlp_basic()
 # mlp_windowed()
+mlp_windowed_trend()
 
-test_original = train[0:5]
-test_1X, test_1Y = create_dataset(test_original, 3, 1, 1)
-
+# test_original = train[0:5]
+# test_1X, test_1Y = create_dataset(test_original, 3, 1, 1)
 # print(test_original)
 # print('---- X-Data ----')
 # print(test_1X)

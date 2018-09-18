@@ -5,19 +5,6 @@ from statsmodels.tsa.arima_model import ARIMA
 
 # TODO % to decimal schon in DataFrame.py durchführen
 
-# Einfache Analysen mit Close-Preis
-# closeData = data["Close"]
-# Indizierung
-# print(closeData['2010-11-1':"2010-11-15"])
-# print(closeData[:"2008-02-10"])
-# print(closeData["2008"])
-# high_prices = data.loc[:, "High"].values
-# low_prices = data.loc[:, "Low"].values
-# mid_prices = (high_prices+low_prices)/2.0
-# split = int(mid_prices.size*0.8)
-# train_data = mid_prices[:split]
-# test_data = mid_prices[split:]
-
 
 class OilData:
     # Test Class Oil Data
@@ -40,6 +27,19 @@ class OilData:
 
         # Anpassung % auf dezimal -- ggf. schon in DataFrame machen
         self.data["Change"] = self.data["Change"]/100
+
+    def calculate_trend(self):
+        # Berechnet den Trend [0,1] = [fallen, steigen] anhand der change-Werte
+        change = self.data["Change"]
+        c_arr = []
+        for p in change:
+            if p >= 0:
+                c_arr.append(1)
+            else:
+                c_arr.append(0)
+
+        self.data["Trend"] = pd.DataFrame(c_arr, index=self.data.index)
+        self.data_original["Trend"] = pd.DataFrame(c_arr, index=self.data.index)
 
     def normalize(self):
         # Skalierung der Daten: fit_transform denkbar
