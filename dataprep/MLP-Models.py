@@ -17,7 +17,7 @@ oil_prices.calculate_avg()
 dataset = oil_prices.data["Avg"].values
 dataset = dataset.reshape(dataset.shape[0], 1)
 
-# Gernerierung [-1,1] - Werte für Change
+# Generierung [-1,1] - Werte für Change
 # change = oil_prices.data["Change"]
 # c_arr = []
 # for p in change[0:5]:
@@ -147,14 +147,14 @@ def mlp_windowed():
 
 
 # mlp_basic
-mlp_windowed()
+# mlp_windowed()
 
 test_original = train[0:5]
-test_1X, test_1Y = create_dataset_test(test_original, 2, 1, 3)
+test_1X, test_1Y = create_dataset(test_original, 3, 1, 1)
 
 # print(test_original)
-# print('--------')
-# print('X-Data', test_1X)
-# print('--------')
-# print('Y-Data', test_1Y)
+# print('---- X-Data ----')
+# print(test_1X)
+# print('----- Y-Data ----')
+# print(test_1Y)
 
