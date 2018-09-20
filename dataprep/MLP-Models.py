@@ -110,8 +110,7 @@ def create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back=1, f
         dataY.append(b)
     return numpy.array(dataX), numpy.array(dataY), len(dataset_multiv)
 
-test_6X, test_1Y, features = create_dataset_multivariate(dataset_multiv,dataset_multiv_Y, 5, 1, 1)
-
+# test_6X, test_1Y, features = create_dataset_multivariate(dataset_multiv,dataset_multiv_Y, 5, 1, 1)
 # print('---- Original-Data ----')
 # for i in dataset_multiv:
 #      print(i[0:10])

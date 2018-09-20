@@ -45,15 +45,15 @@ class OilData:
         # Skalierung der Daten: fit_transform denkbar
         self.scaler_price.fit(self.data["Avg"].values.reshape(-1, 1))
 
-        self.data[["Low", "High", "Open", "Close", "Change", "Avg"]] = \
-            self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Change", "Avg"]])
+        self.data[["Low", "High", "Open", "Close", "Avg"]] = \
+            self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Avg"]])
 
         # Idee hinter dem 2. Scaler: Anderer Wertebereich, getrennte Transformation macht ggf. Sinn
         self.scaler_volume.fit(self.data["Volume"].values.reshape(-1, 1))
         self.data["Volume"] = self.scaler_volume.transform(self.data["Volume"].values.reshape(-1, 1))
 
         # print("// Transformed Data")
-        # print(self.data[["Low", "High", "Open", "Close", "Change", "Volume", "Avg"]].head())
+        # print(self.data[["Low", "High", "Open", "Close", "Volume", "Avg"]].head())
 
 
 def pricerange_analysis(inputdata):
