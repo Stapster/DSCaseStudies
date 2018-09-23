@@ -16,6 +16,12 @@ import dataprep.DataAnalysis2 as source
 # https://machinelearningmastery.com/time-series-prediction-with-deep-learning-in-python-with-keras/
 # https://machinelearningmastery.com/index-slice-reshape-numpy-arrays-machine-learning-python/
 
+# TODO - Stefan - Tabelle mit Ergebnissen / Konfiguration
+# TODO - Stefan - MLP-Architektur anpassen (in Absprache mit Johannes)
+# TODO - Stefan - Stationäre Daten herstellen / Transformation
+
+# TODO - RSI noch mal probieren
+# http://www.andrewshamlet.net/2017/06/10/python-tutorial-rsi/
 
 # TODO - Konfigurationsanalyse aus dem folgenden Tutorial ausführen!
 # https://machinelearningmastery.com/exploratory-configuration-multilayer-perceptron-network-time-series-forecasting/
@@ -61,6 +67,7 @@ change = oil_prices.data["Change"].values.reshape(dataset.shape[0], 1)
 # Hier ggf. features entfernen/hinzufügen
 dataset_multiv = [open_price, close_price, low_price, high_price, volume, change]
 dataset_multiv_Y = trend
+dataset_multiv_Y_REG = close_price
 # print(dataset_multiv[0:5])
 # for i in dataset_multiv:
 #     print(i)
@@ -193,6 +200,44 @@ def mlp_windowed_trend():
     print('Test Score: ', testScore)
 
 
+def mlp_multivariate():
+    # reshape dataset
+    look_back = 13
+    forecast = 1
+    sequence = 5
+    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y_REG, look_back, forecast, sequence)
+
+    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
+    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+
+    print(trainX.shape)
+    print(trainY.shape)
+    print(trainX)
+    print(trainY)
+
+    model = Sequential()
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(4, activation='relu'))
+    model.add(Dense(2, activation='relu'))
+    model.add(Flatten())
+    model.add(Dense(sequence))
+    model.compile(loss='mean_squared_error', optimizer='adam')
+
+    history = model.fit(trainX, trainY, validation_split=0.8, epochs=500, batch_size=4, verbose=2)
+    pyplot.plot(history.history['loss'], label='train')
+    pyplot.plot(history.history['val_loss'], label='test')
+    pyplot.title('Multivariates Modell')
+    pyplot.legend()
+    pyplot.show()
+
+    # Estimate model performance
+    trainScore = model.evaluate(trainX, trainY, verbose=0)
+    print('Train Score: ', trainScore)
+    # testScore = model.evaluate(testX, testY, verbose=0)
+    # print('Test Score: ', testScore)
+
+
 def mlp_multivariate_trend():
     # reshape dataset
     look_back = 13
@@ -234,7 +279,8 @@ def mlp_multivariate_trend():
 
 # mlp_windowed()
 # mlp_windowed_trend()
-#mlp_multivariate_trend()
+mlp_multivariate()
+# mlp_multivariate_trend()
 
 ########################
 # Test für multivariate Datenformatierung
@@ -351,4 +397,4 @@ def mlp_multivariate_trend_t1():
     # testScore = model.evaluate(testX, testY, verbose=0)
     # print('Test Score: ', testScore)
 
-mlp_multivariate_trend_t1()
+# mlp_multivariate_trend_t1()
