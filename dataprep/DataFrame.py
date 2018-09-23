@@ -66,5 +66,5 @@ print("Rescaled data:")
 print(dta_rescaled(dta_preparation()).head())
 
 
-#plt.show(plotdta(dta_preparation()))                          #Visualisierung Rohdaten
-#plt.show(plotdta(dta_rescaled(dta_preparation())))             #Visualisierung skalierte Daten
+plt.show(plotdta(dta_preparation()))                          #Visualisierung Rohdaten
+plt.show(plotdta(dta_rescaled(dta_preparation())))             #Visualisierung skalierte Daten

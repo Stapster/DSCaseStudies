@@ -218,7 +218,7 @@ def mlp_multivariate_trend():
     model.add(Dense(sequence, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    history = model.fit(trainX, trainY, validation_split=0.4, epochs=600, batch_size=12, verbose=2)
+    history = model.fit(trainX, trainY, validation_split=0.4, epochs=500, batch_size=12, verbose=2)
     pyplot.plot(history.history['acc'], label='train')
     pyplot.plot(history.history['val_acc'], label='test')
     pyplot.title('Multivariates Modell')
@@ -234,7 +234,7 @@ def mlp_multivariate_trend():
 
 # mlp_windowed()
 # mlp_windowed_trend()
-mlp_multivariate_trend()
+#mlp_multivariate_trend()
 
 ########################
 # Test für multivariate Datenformatierung
@@ -276,3 +276,79 @@ X_train = numpy.reshape(X, (X.shape[0], X.shape[1], features))
 
 #print(X_train)
 #print(Y)
+
+def mlp_multivariate_trend_t2():
+    # reshape dataset
+    look_back = 13
+    forecast = 1
+    sequence = 1
+    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back, forecast, sequence)
+
+    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
+    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+
+    print(trainX.shape)
+    print(trainY.shape)
+    print(trainX)
+    print(trainY)
+
+    model = Sequential()
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='sigmoid'))
+    #model.add(Dropout(0.25))
+    model.add(Dense(8, activation='sigmoid'))
+    model.add(Flatten())
+    model.add(Dense(sequence, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    history = model.fit(trainX, trainY, validation_split=0.4, epochs=600, batch_size=12, verbose=2)
+    pyplot.plot(history.history['acc'], label='train')
+    pyplot.plot(history.history['val_acc'], label='test')
+    pyplot.title('Multivariates Modell')
+    pyplot.legend()
+    pyplot.show()
+
+    # Estimate model performance
+    trainScore = model.evaluate(trainX, trainY, verbose=0)
+    print('Train Score: ', trainScore)
+    # testScore = model.evaluate(testX, testY, verbose=0)
+    # print('Test Score: ', testScore)
+
+#mlp_multivariate_trend_t2()
+
+def mlp_multivariate_trend_t1():
+    # reshape dataset
+    look_back = 13
+    forecast = 1
+    sequence = 1
+    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back, forecast, sequence)
+
+    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
+    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+
+    print(trainX.shape)
+    print(trainY.shape)
+    print(trainX)
+    print(trainY)
+
+    model = Sequential()
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='tanh'))
+    #model.add(Dropout(0.25))
+    model.add(Dense(8, activation='tanh'))
+    model.add(Flatten())
+    model.add(Dense(sequence, activation='tanh'))
+    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
+
+    history = model.fit(trainX, trainY, validation_split=0.4, epochs=600, batch_size=12, verbose=2)
+    pyplot.plot(history.history['acc'], label='train')
+    pyplot.plot(history.history['val_acc'], label='test')
+    pyplot.title('Multivariates Modell')
+    pyplot.legend()
+    pyplot.show()
+
+    # Estimate model performance
+    trainScore = model.evaluate(trainX, trainY, verbose=0)
+    print('Train Score: ', trainScore)
+    # testScore = model.evaluate(testX, testY, verbose=0)
+    # print('Test Score: ', testScore)
+
+mlp_multivariate_trend_t1()
