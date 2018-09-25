@@ -1,45 +1,40 @@
-import pandas as pd
 import numpy
 import math
 import matplotlib.pylab as plt
 from matplotlib import pyplot
-from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.layers import Reshape
 from keras.layers import Dropout
-from keras.layers import Convolution1D
-from keras.layers import BatchNormalization
 from keras.layers import Flatten
 import dataprep.DataAnalysis2 as source
-
-# https://machinelearningmastery.com/time-series-prediction-with-deep-learning-in-python-with-keras/
-# https://machinelearningmastery.com/index-slice-reshape-numpy-arrays-machine-learning-python/
 
 # TODO - Stefan - Tabelle mit Ergebnissen / Konfiguration
 # TODO - Stefan - MLP-Architektur anpassen (in Absprache mit Johannes)
 # TODO - Stefan - Stationäre Daten herstellen / Transformation
 
+# Problem: Stationäre Daten müssten ja für alle Features einzeln hergestell werden, oder?
+
 # TODO - RSI noch mal probieren
 # http://www.andrewshamlet.net/2017/06/10/python-tutorial-rsi/
+
+# data shuffle mal testweise ausschalten
 
 # TODO - Konfigurationsanalyse aus dem folgenden Tutorial ausführen!
 # https://machinelearningmastery.com/exploratory-configuration-multilayer-perceptron-network-time-series-forecasting/
 
-# TODO - multivariate time series!!!
-# https://medium.com/machine-learning-world/neural-networks-for-algorithmic-trading-2-1-multivariate-time-series-ab016ce70f57
-# Anmerkung: möglichst alle (verschiedenen) Daten-Inputs getrennt normalisieren
-# CNN ausprobieren
+################################################
 
-# TODO - interessant, stellt fest dass MLP für sequentielle Daten besser ist, aber CNN für Classification Porblems!!!
-# https://medium.com/machine-learning-world/neural-networks-for-algorithmic-trading-part-one-simple-time-series-forecasting-f992daa1045a
+# Daten einlesen und data-split durchführen
 
+################################################
+
+# Datensatz einlesen und initial modifizieren
 oil_prices = source.OilData()
 oil_prices.calculate_avg()
 oil_prices.calculate_trend()
-# oil_prices.normalize()
+oil_prices.normalize()
 
-# univariater Datensatr
+# univariater Datensatz
 dataset = oil_prices.data["Avg"].values
 dataset = dataset.reshape(dataset.shape[0], 1)
 
@@ -47,11 +42,14 @@ dataset = dataset.reshape(dataset.shape[0], 1)
 # Test ob die Trendberechnung funktioniert hat:
 # print(oil_prices.data[["Trend", "Change"]].head())
 
-# split into train and test sets
-train_size = int(len(dataset) * 0.67)
+# split in Trainings- und Testdaten (bzw. Validierungsdaten)
+split = 0.67
+train_size = int(len(dataset) * split)
 test_size = len(dataset) - train_size
 train, test = dataset[0:train_size, :], dataset[train_size:len(dataset), :]
-print(len(train), len(test))
+print("Univariate data-split")
+print("Train: ", len(train), " / Test: ", len(test))
+print("--------------------------")
 
 ################################################
 
@@ -64,27 +62,47 @@ volume = oil_prices.data["Volume"].values.reshape(dataset.shape[0], 1)
 trend = oil_prices.data["Trend"].values.reshape(dataset.shape[0], 1)
 change = oil_prices.data["Change"].values.reshape(dataset.shape[0], 1)
 
-# Hier ggf. features entfernen/hinzufügen
+# Hier Features entfernen/hinzufügen
 dataset_multiv = [open_price, close_price, low_price, high_price, volume, change]
 dataset_multiv_Y = trend
 dataset_multiv_Y_REG = close_price
-# print(dataset_multiv[0:5])
-# for i in dataset_multiv:
-#     print(i)
 
-# train_size = int(len(close_price) * 0.67)
-# test_size = len(close_price) - train_size
-# trainX, testX = dataset_multiv[0:train_size], dataset_multiv[train_size:len(dataset_multiv)]
-# trainY, testY = dataset_multiv_Y[0:train_size], dataset_multiv_Y[train_size:len(dataset_multiv_Y)]
-# # trainX, testX = dataset_multiv[0:train_size, :], dataset_multiv[train_size:len(dataset_multiv), :]
-# # trainY, testY = dataset_multiv_Y[0:train_size, :], dataset_multiv_Y[train_size:len(dataset_multiv_Y), :]
-#
-# print(len(trainX), len(trainY))
-# print(len(testX), len(testY))
-# print('----------------')
-# print(trainX)
+# data-split
+split = 0.4
+train_size = int(len(dataset_multiv[0]) * split)
+test_size = len(dataset_multiv[0]) - train_size
+
+# Input-Variablen
+trainX_multiv = []
+testX_multiv = []
+for i in dataset_multiv:
+    trainX, testX = i[0:train_size], i[train_size:len(i)]
+    trainX_multiv.append(trainX)
+    testX_multiv.append(testX)
+
+# Target-Vektoren
+trainY_multiv, testY_multiv = dataset_multiv_Y[0:train_size], dataset_multiv_Y[train_size:len(dataset_multiv_Y)]
+trainY_multiv_REG, testY_multiv_REG = dataset_multiv_Y_REG[0:train_size], dataset_multiv_Y_REG[train_size:len(dataset_multiv_Y_REG)]
+
+print("Multivariate data-split to ", train_size, "/", test_size)
+print("X-Values // Train: ", len(trainX_multiv[0]), " / Test: ", len(testX_multiv[0]))
+print("Y-Trend  // Train: ", len(trainY_multiv), " / Test: ", len(testY_multiv))
+print("Y-REG    // Train: ", len(trainY_multiv_REG), " / Test: ", len(testY_multiv_REG))
+print("--------------------------")
+
+################################################
+
+# Data-frames für MLP herstellen
+
+################################################
+
+# Erstellt generisch Datensätze für das MLP mit den 3 wichtigsten Merkmalen:
+# look_back: Anzahl der berücksichtigten Tage vor der Prediction
+# forecast: Welcher Wert t+x soll predicted werden
+# sequence: Anzahl der Werte ab t+x, die predicted werden sollen
 
 
+# Einfacher dataframe mit nur 1 Feature
 def create_dataset(dataset, look_back=1, forecast=1, sequence=1):
     dataX, dataY = [], []
     for i in range(len(dataset)-look_back-(forecast-1)-(sequence-1)):
@@ -102,7 +120,7 @@ def create_dataset(dataset, look_back=1, forecast=1, sequence=1):
 # print('----- Y-Data ----')
 # print(test_1Y)
 
-
+# Komplexer dataframe mit beliebig vielen Features
 def create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back=1, forecast=1, sequence=1):
     dataX, dataY = [], []
 
@@ -128,8 +146,14 @@ def create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back=1, f
 # print('----- Features ----')
 # print(features)
 
+################################################
 
-def mlp_windowed():
+# Modellierung
+
+################################################
+
+
+def mlp_univariate():
     # reshape dataset
     look_back = 5
     forecast = 1
@@ -173,7 +197,7 @@ def mlp_windowed():
     plt.show()
 
 
-def mlp_windowed_trend():
+def mlp_univariate_trend():
     # reshape dataset
     look_back = 10
     forecast = 1
@@ -200,201 +224,136 @@ def mlp_windowed_trend():
     print('Test Score: ', testScore)
 
 
-def mlp_multivariate():
-    # reshape dataset
-    look_back = 13
-    forecast = 1
-    sequence = 5
-    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y_REG, look_back, forecast, sequence)
+def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, batch=12):
+    # Trainings- und Testdaten generieren
+    trainX, trainY, features = create_dataset_multivariate(trainX_multiv, trainY_multiv_REG, look_back, forecast, sequence)
+    testX, testY, features = create_dataset_multivariate(testX_multiv, testY_multiv_REG, look_back, forecast, sequence)
 
-    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
-    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+    # print(trainX.shape)
+    # print(trainY.shape)
 
-    print(trainX.shape)
-    print(trainY.shape)
-    print(trainX)
-    print(trainY)
-
+    # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
-    model.add(Dense(6, activation='relu'))
+    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
+    # model.add(Dense(6, activation='relu'))
     model.add(Dense(4, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence))
     model.compile(loss='mean_squared_error', optimizer='adam')
 
-    history = model.fit(trainX, trainY, validation_split=0.8, epochs=500, batch_size=4, verbose=2)
-    pyplot.plot(history.history['loss'], label='train')
-    pyplot.plot(history.history['val_loss'], label='test')
-    pyplot.title('Multivariates Modell')
-    pyplot.legend()
-    pyplot.show()
+    history = model.fit(trainX, trainY, validation_data=(testX, testY), epochs=numberEpochs, batch_size=batch, verbose=0)
 
-    # Estimate model performance
+    # pyplot.plot(history.history['loss'], label='train')
+    # pyplot.plot(history.history['val_loss'], label='test')
+    # pyplot.ylim(0, 40)
+    # pyplot.xlim(0, numberEpochs)
+    # pyplot.title('Multivariates Modell: Regression (MSE) / ' + str(look_back) + ' / ' + str(forecast) + ' / '
+    #              + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
+    # pyplot.legend()
+    # pyplot.show()
+
+    # Model evaluieren
     trainScore = model.evaluate(trainX, trainY, verbose=0)
     print('Train Score: ', trainScore)
-    # testScore = model.evaluate(testX, testY, verbose=0)
-    # print('Test Score: ', testScore)
+    testScore = model.evaluate(testX, testY, verbose=0)
+    print('Test Score: ', testScore)
+
+    return model
 
 
-def mlp_multivariate_trend():
-    # reshape dataset
-    look_back = 13
-    forecast = 1
-    sequence = 1
-    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back, forecast, sequence)
+def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=500, batch=12):
+    # Trainings- und Testdaten generieren
+    trainX, trainY, features = create_dataset_multivariate(trainX_multiv, trainY_multiv, look_back, forecast, sequence)
+    testX, testY, features = create_dataset_multivariate(testX_multiv, testY_multiv, look_back, forecast, sequence)
 
-    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
-    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+    # print(trainX.shape)
+    # print(trainY.shape)
 
-    print(trainX.shape)
-    print(trainY.shape)
-    print(trainX)
-    print(trainY)
-
+    # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
-    #model.add(Dropout(0.25))
-    model.add(Dense(6, activation='relu'))
+    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
+    # model.add(Dense(6, activation='relu'))
     model.add(Dense(4, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    history = model.fit(trainX, trainY, validation_split=0.4, epochs=500, batch_size=12, verbose=2)
-    pyplot.plot(history.history['acc'], label='train')
-    pyplot.plot(history.history['val_acc'], label='test')
-    pyplot.title('Multivariates Modell')
-    pyplot.legend()
-    pyplot.show()
+    history = model.fit(trainX, trainY, validation_data=(testX, testY), epochs=numberEpochs, batch_size=batch, verbose=0)
 
-    # Estimate model performance
+    # pyplot.plot(history.history['acc'], label='train')
+    # pyplot.plot(history.history['val_acc'], label='test')
+    # pyplot.xlim(0, numberEpochs)
+    # pyplot.title('Multivariates Modell: Classification (ACC) / ' + str(look_back) + ' / ' + str(forecast) + ' / '
+    #              + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
+    # pyplot.legend()
+    # pyplot.show()
+
+    # Model evaluieren
     trainScore = model.evaluate(trainX, trainY, verbose=0)
     print('Train Score: ', trainScore)
-    # testScore = model.evaluate(testX, testY, verbose=0)
-    # print('Test Score: ', testScore)
+    testScore = model.evaluate(testX, testY, verbose=0)
+    print('Test Score: ', testScore)
+
+    return model
 
 
-# mlp_windowed()
-# mlp_windowed_trend()
-mlp_multivariate()
-# mlp_multivariate_trend()
+# model1 = mlp_multivariate(13, 1, 5, 1000, 64)
+# model1.save('mlp_reg_76421_1000_64.h5')
 
-########################
-# Test für multivariate Datenformatierung
+# model1 = mlp_multivariate_trend(13, 1, 1, 1000, 64)
+# model1.save('mlp_class_76421_1000_64.h5')
 
-lookback = 1
-forecast = 1
-features = 4
-
-openp = [10, 11, 12, 13, 12]
-closep = [10.5, 11, 11.5, 12, 11.5]
-volume = [30, 40, 35, 38, 45]
-change = [0, 0, 1, 1, 0]
-
-X, Y = [], []
-for i in range(0, len(openp), 1):
-    try:
-
-        o = openp[i:i + lookback]
-        c = closep[i:i + lookback]
-        v = volume[i:i + lookback]
-        x_i = change[i:i + lookback]
-
-        y_i = change[i + forecast]
-
-        x_i = numpy.column_stack((x_i, o, c, v))
-
-    except Exception as e:
-        break
-
-    X.append(x_i)
-    Y.append(y_i)
-
-X, Y = numpy.array(X), numpy.array(Y)
-
-#print(X)
-#print(Y)
-
-X_train = numpy.reshape(X, (X.shape[0], X.shape[1], features))
-
-#print(X_train)
-#print(Y)
-
-def mlp_multivariate_trend_t2():
-    # reshape dataset
+def run_full_prediction():
+    # Modellparameter
     look_back = 13
-    forecast = 1
-    sequence = 1
-    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back, forecast, sequence)
+    forecast_arr = [1, 2, 3, 5, 10]
+    sequence = [1, 5]
+    numberEpochs = 1000
+    batch = 64
 
-    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
-    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+    # Architektur der hidden layer (für die Ablage, manuell anpassen!)
+    architecture = '6421N'
 
-    print(trainX.shape)
-    print(trainY.shape)
-    print(trainX)
-    print(trainY)
+    for run in range(4):
+        print("------------- / ", run, " / -------------")
 
-    model = Sequential()
-    model.add(Dense(features+1, input_shape=(features, look_back), activation='sigmoid'))
-    #model.add(Dropout(0.25))
-    model.add(Dense(8, activation='sigmoid'))
-    model.add(Flatten())
-    model.add(Dense(sequence, activation='sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        print("Regression / short and long term")
+        for forecast in forecast_arr:
+            print("Look-back: ", look_back, " / forecast: ", forecast, " / Sequence: ", sequence[0], " / Epochs: ",
+                  numberEpochs, " / Batch-size: ", batch)
+            model = mlp_multivariate(look_back, forecast, sequence[0], numberEpochs, batch)
+            model.save(
+                'mlp_reg_' + str(architecture) + '_' + str(look_back) + '_' + str(forecast) + '_' + str(sequence[0])
+                + '_' + str(numberEpochs) + '_' + str(run) + '.h5')
+            print("----------------------------")
 
-    history = model.fit(trainX, trainY, validation_split=0.4, epochs=600, batch_size=12, verbose=2)
-    pyplot.plot(history.history['acc'], label='train')
-    pyplot.plot(history.history['val_acc'], label='test')
-    pyplot.title('Multivariates Modell')
-    pyplot.legend()
-    pyplot.show()
+        print("Regression / sequence")
+        print("Look-back: ", look_back, " / forecast: ", forecast_arr[0], " / Sequence: ", sequence[1], " / Epochs: ",
+              numberEpochs, " / Batch-size: ", batch)
+        model = mlp_multivariate(look_back, forecast_arr[0], sequence[1], numberEpochs, batch)
+        model.save(
+            'mlp_reg_' + str(architecture) + '_' + str(look_back) + '_' + str(forecast_arr[0]) + '_' + str(sequence[1])
+            + '_' + str(numberEpochs) + '_' + str(run) + '.h5')
 
-    # Estimate model performance
-    trainScore = model.evaluate(trainX, trainY, verbose=0)
-    print('Train Score: ', trainScore)
-    # testScore = model.evaluate(testX, testY, verbose=0)
-    # print('Test Score: ', testScore)
+        print("----------------------------")
+        print("Classification")
+        print("Look-back: ", look_back, " / forecast: ", forecast_arr[0], " / Sequence: ", sequence[0], " / Epochs: ",
+              numberEpochs, " / Batch-size: ", batch)
+        model = mlp_multivariate_trend(look_back, forecast_arr[0], sequence[0], numberEpochs, batch)
+        model.save(
+            'mlp_class_' + str(architecture) + '_' + str(look_back) + '_' + str(forecast_arr[0]) + '_' +
+            str(sequence[0]) + '_' + str(numberEpochs) + '_' + str(run) + '.h5')
 
-#mlp_multivariate_trend_t2()
 
-def mlp_multivariate_trend_t1():
-    # reshape dataset
-    look_back = 13
-    forecast = 1
-    sequence = 1
-    trainX, trainY, features = create_dataset_multivariate(dataset_multiv, dataset_multiv_Y, look_back, forecast, sequence)
+run_full_prediction()
 
-    # trainX, trainY = create_dataset(train, look_back, forecast, sequence)
-    # testX, testY = create_dataset(test, look_back, forecast, sequence)
+##################################################################################
+##################################################################################
 
-    print(trainX.shape)
-    print(trainY.shape)
-    print(trainX)
-    print(trainY)
+# andere Konfigurationen zum Testen
 
-    model = Sequential()
-    model.add(Dense(features+1, input_shape=(features, look_back), activation='tanh'))
-    #model.add(Dropout(0.25))
-    model.add(Dense(8, activation='tanh'))
-    model.add(Flatten())
-    model.add(Dense(sequence, activation='tanh'))
-    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['accuracy'])
+# 1. nur sigmoid activation bei Trend
 
-    history = model.fit(trainX, trainY, validation_split=0.4, epochs=600, batch_size=12, verbose=2)
-    pyplot.plot(history.history['acc'], label='train')
-    pyplot.plot(history.history['val_acc'], label='test')
-    pyplot.title('Multivariates Modell')
-    pyplot.legend()
-    pyplot.show()
-
-    # Estimate model performance
-    trainScore = model.evaluate(trainX, trainY, verbose=0)
-    print('Train Score: ', trainScore)
-    # testScore = model.evaluate(testX, testY, verbose=0)
-    # print('Test Score: ', testScore)
-
-# mlp_multivariate_trend_t1()
+# 2. tanh activation und sgd optimizer

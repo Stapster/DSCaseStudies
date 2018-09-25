@@ -3,11 +3,9 @@ import matplotlib.pylab as plt
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
 
-# TODO % to decimal schon in DataFrame.py durchführen
 
-
+# Klasse zum Einlesen und bearbeiten der Daten
 class OilData:
-    # Test Class Oil Data
 
     def __init__(self):
         # Daten einlesen, überflüssige Spalten entfernen und Index festlegen
@@ -25,11 +23,11 @@ class OilData:
         self.data["Avg"] = pd.DataFrame((self.data["High"] + self.data["Low"]) / 2.0, index=self.data.index)
         self.data_original["Avg"] = pd.DataFrame((self.data["High"] + self.data["Low"]) / 2.0, index=self.data.index)
 
-        # Anpassung % auf dezimal -- ggf. schon in DataFrame machen
+        # Anpassung % auf dezimal -- ggf. schon vorher machen
         self.data["Change"] = self.data["Change"]/100
 
     def calculate_trend(self):
-        # Berechnet den Trend [0,1] = [fallen, steigen] anhand der change-Werte
+        # Berechnet den Trend als binäre Variable [0,1] = [fallen, steigen] anhand der change-Werte
         change = self.data["Change"]
         c_arr = []
         for p in change:
@@ -42,13 +40,13 @@ class OilData:
         self.data_original["Trend"] = pd.DataFrame(c_arr, index=self.data.index)
 
     def normalize(self):
-        # Skalierung der Daten: fit_transform denkbar
+        # Skalierung der Daten / fit_transform und getrennte Transformation wäre auch denkbar
         self.scaler_price.fit(self.data["Avg"].values.reshape(-1, 1))
 
         self.data[["Low", "High", "Open", "Close", "Avg"]] = \
             self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Avg"]])
 
-        # Idee hinter dem 2. Scaler: Anderer Wertebereich, getrennte Transformation macht ggf. Sinn
+        # Idee hinter dem 2. Scaler: Anderer Wertebereich, getrennte Transformation macht hier mehr Sinn
         self.scaler_volume.fit(self.data["Volume"].values.reshape(-1, 1))
         self.data["Volume"] = self.scaler_volume.transform(self.data["Volume"].values.reshape(-1, 1))
 
