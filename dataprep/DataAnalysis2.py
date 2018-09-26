@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pylab as plt
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
+import dataprep.indicators as indicators
 
 # TODO % to decimal schon in DataFrame.py durchführen
 
@@ -14,9 +15,11 @@ class OilData:
         self.data = pd.read_csv("BrentDataset_prep.csv")
         self.data.index = pd.to_datetime(self.data["Date"])
         self.data = self.data.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
-        self.data_original = pd.read_csv("BrentDataset_prep.csv")
+
+        self.data_original = pd.read_csv("BrentDataset_prep.csv", parse_dates=["Date"])                 #parse_dates für Prophet
         self.data_original.index = pd.to_datetime(self.data_original["Date"])
-        self.data_original = self.data_original.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
+        self.data_original = self.data_original.drop(columns=["Unnamed: 0", "Year", "Month", "Day"])    #"Date" für Prophet erhalten
+
         self.scaler_price = MinMaxScaler()
         self.scaler_volume = MinMaxScaler()
 
@@ -54,6 +57,46 @@ class OilData:
 
         # print("// Transformed Data")
         # print(self.data[["Low", "High", "Open", "Close", "Volume", "Avg"]].head())
+
+    # Anfügen des Indikators "obv" an Datensatz (Substitut für pvt)
+    def obv (self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        #del self.data["Date"]
+        self.data = indicators.on_balance_volume(self.data)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        #del self.data_original["Date"]
+        self.data_original = indicators.on_balance_volume(self.data_original)
+
+    # Anfügen des Indikators "pvt" an Datensatz (Substitut für obv)
+    def pvt (self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        #del self.data["Date"]
+        self.data = indicators.price_volume_trend(self.data)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        #del self.data_original["Date"]
+        self.data_original = indicators.price_volume_trend(self.data_original)
+
+    # Anfügen des Indikators "rsi" an Datensatz
+    def rsi (self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        #del self.data["Date"]
+        self.data = indicators.rsi(self.data)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        #del self.data_original["Date"]
+        self.data_original = indicators.rsi(self.data_original)
+
+    # Anfügen der Indikatoren "macd_val" und "macd_signal_line" an Datensatz
+    def macd(self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        # del self.data["Date"]
+        self.data = indicators.macd(self.data)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        # del self.data_original["Date"]
+        self.data_original = indicators.macd(self.data_original)
 
 
 def pricerange_analysis(inputdata):
@@ -151,4 +194,4 @@ def run_all_tests():
     arima_test(oilprices)
 
 
-# run_all_tests()
+#run_all_tests()
