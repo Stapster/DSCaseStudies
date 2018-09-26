@@ -17,7 +17,8 @@ def test_indicators():
     dataset = dataset.set_index("Date")
     print(dataset.info())
     print(dataset[["Close","Volume", "obv", "pvt", "rsi", "macd_val", "macd_signal_line"]].iloc[2400: , 0:6])
-
+    print("\n" + "Mean:")
+    print(dataset.mean())
     plt.plot(dataset.rsi)
     plt.show()
 

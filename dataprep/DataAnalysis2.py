@@ -63,40 +63,51 @@ class OilData:
         self.data = self.data.rename_axis("index").reset_index(drop=True)
         #del self.data["Date"]
         self.data = indicators.on_balance_volume(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
 
         self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
         #del self.data_original["Date"]
         self.data_original = indicators.on_balance_volume(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace=True)
+
 
     # Anfügen des Indikators "pvt" an Datensatz (Substitut für obv)
     def pvt (self):
         self.data = self.data.rename_axis("index").reset_index(drop=True)
         #del self.data["Date"]
         self.data = indicators.price_volume_trend(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
 
         self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
         #del self.data_original["Date"]
         self.data_original = indicators.price_volume_trend(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace=True)
+
 
     # Anfügen des Indikators "rsi" an Datensatz
     def rsi (self):
         self.data = self.data.rename_axis("index").reset_index(drop=True)
         #del self.data["Date"]
         self.data = indicators.rsi(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
 
         self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
         #del self.data_original["Date"]
         self.data_original = indicators.rsi(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace = True)
+
 
     # Anfügen der Indikatoren "macd_val" und "macd_signal_line" an Datensatz
     def macd(self):
         self.data = self.data.rename_axis("index").reset_index(drop=True)
         # del self.data["Date"]
         self.data = indicators.macd(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
 
         self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
         # del self.data_original["Date"]
         self.data_original = indicators.macd(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace = True)
 
 
 def pricerange_analysis(inputdata):
