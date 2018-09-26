@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pylab as plt
+import numpy
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
 
@@ -52,6 +53,12 @@ class OilData:
 
         # print("// Transformed Data")
         # print(self.data[["Low", "High", "Open", "Close", "Volume", "Avg"]].head())
+
+    def log_transform(self):
+        # Log - Transformation auf Price- und Volume
+
+        self.data[["Low", "High", "Open", "Close", "Avg", "Volume", "Change"]] = \
+            numpy.log(self.data[["Low", "High", "Open", "Close", "Avg", "Volume", "Change"]])
 
 
 def pricerange_analysis(inputdata):

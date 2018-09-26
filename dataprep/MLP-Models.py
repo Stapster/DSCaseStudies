@@ -32,7 +32,8 @@ import dataprep.DataAnalysis2 as source
 oil_prices = source.OilData()
 oil_prices.calculate_avg()
 oil_prices.calculate_trend()
-oil_prices.normalize()
+# oil_prices.normalize()
+oil_prices.log_transform()
 
 # univariater Datensatz
 dataset = oil_prices.data["Avg"].values
@@ -347,7 +348,7 @@ def run_full_prediction():
             str(sequence[0]) + '_' + str(numberEpochs) + '_' + str(run) + '.h5')
 
 
-run_full_prediction()
+# run_full_prediction()
 
 ##################################################################################
 ##################################################################################
