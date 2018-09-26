@@ -1,26 +1,18 @@
 import numpy
 import math
-import matplotlib.pylab as plt
 from matplotlib import pyplot
 from keras.models import Sequential
+from keras.models import load_model
 from keras.layers import Dense
-from keras.layers import Dropout
 from keras.layers import Flatten
+from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint
 import dataprep.DataAnalysis2 as source
 
 # TODO - Stefan - Tabelle mit Ergebnissen / Konfiguration
 # TODO - Stefan - MLP-Architektur anpassen (in Absprache mit Johannes)
-# TODO - Stefan - Stationäre Daten herstellen / Transformation
-
-# Problem: Stationäre Daten müssten ja für alle Features einzeln hergestell werden, oder?
-
-# TODO - RSI noch mal probieren
-# http://www.andrewshamlet.net/2017/06/10/python-tutorial-rsi/
 
 # data shuffle mal testweise ausschalten
-
-# TODO - Konfigurationsanalyse aus dem folgenden Tutorial ausführen!
-# https://machinelearningmastery.com/exploratory-configuration-multilayer-perceptron-network-time-series-forecasting/
 
 ################################################
 
@@ -32,6 +24,9 @@ import dataprep.DataAnalysis2 as source
 oil_prices = source.OilData()
 oil_prices.calculate_avg()
 oil_prices.calculate_trend()
+oil_prices.pvt()
+oil_prices.rsi()
+oil_prices.macd()
 # oil_prices.normalize()
 oil_prices.log_transform()
 
@@ -62,6 +57,14 @@ high_price = oil_prices.data["High"].values.reshape(dataset.shape[0], 1)
 volume = oil_prices.data["Volume"].values.reshape(dataset.shape[0], 1)
 trend = oil_prices.data["Trend"].values.reshape(dataset.shape[0], 1)
 change = oil_prices.data["Change"].values.reshape(dataset.shape[0], 1)
+
+# zusätzliche Indikatoren
+rsi = oil_prices.data["rsi"].values.reshape(dataset.shape[0], 1)
+macd_val = oil_prices.data["macd_val"].values.reshape(dataset.shape[0], 1)
+pvt = oil_prices.data["pvt"].values.reshape(dataset.shape[0], 1)
+rsi = numpy.log(rsi)
+macd_val = numpy.log(macd_val)
+pvt = numpy.log(pvt)
 
 # Hier Features entfernen/hinzufügen
 dataset_multiv = [open_price, close_price, low_price, high_price, volume, change]
@@ -222,15 +225,22 @@ def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, bat
 
     # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
+    #model.add(Dense(6, activation='relu'))
     model.add(Dense(5, activation='relu'))
-    model.add(Dense(3, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence))
     model.compile(loss='mean_squared_error', optimizer='adam')
 
-    history = model.fit(trainX, trainY, validation_data=(testX, testY), epochs=numberEpochs, batch_size=batch, verbose=0)
+    stop_criteria = EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=numberEpochs/2, verbose=0, mode='auto')
+    mcp = ModelCheckpoint("model_best.hdf5", monitor="val_loss",
+                          save_best_only=True, save_weights_only=False, verbose=0)
+    history = model.fit(trainX, trainY, validation_data=(testX, testY), epochs=numberEpochs, batch_size=batch,
+                        verbose=0, callbacks=[mcp, stop_criteria])
+
+    del model
+    best_model = load_model("model_best.hdf5")
 
     # pyplot.plot(history.history['loss'], label='train')
     # pyplot.plot(history.history['val_loss'], label='test')
@@ -243,18 +253,18 @@ def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, bat
 
     # Model evaluieren
     if oil_prices.log_transformed:
-        prediction = model.predict(testX)
+        prediction = best_model.predict(testX)
         prediction_bt = numpy.exp(prediction)
         testY_bt = numpy.exp(testY)
         mse = ((prediction_bt - testY_bt) ** 2).mean()
         print('Test Score: ', mse)
     else:
-        trainScore = model.evaluate(trainX, trainY, verbose=0)
+        trainScore = best_model.evaluate(trainX, trainY, verbose=0)
         print('Train Score: ', trainScore)
-        testScore = model.evaluate(testX, testY, verbose=0)
+        testScore = best_model.evaluate(testX, testY, verbose=0)
         print('Test Score: ', testScore)
 
-    return model
+    return best_model
 
 
 def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=500, batch=12):
@@ -267,15 +277,23 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
 
     # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
+    #model.add(Dense(6, activation='relu'))
     model.add(Dense(5, activation='relu'))
-    model.add(Dense(3, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    history = model.fit(trainX, trainY, validation_data=(testX, testY), epochs=numberEpochs, batch_size=batch, verbose=0)
+    stop_criteria = EarlyStopping(monitor='val_acc', min_delta=0.0001, patience=numberEpochs/2, verbose=0, mode='auto')
+    mcp = ModelCheckpoint("model_best.hdf5", monitor="val_acc",
+                          save_best_only=True, save_weights_only=False, verbose=0)
+
+    history = model.fit(trainX, trainY, validation_data=(testX, testY), epochs=numberEpochs, batch_size=batch,
+                        verbose=0, callbacks=[mcp, stop_criteria])
+
+    del model
+    best_model = load_model("model_best.hdf5")
 
     # pyplot.plot(history.history['acc'], label='train')
     # pyplot.plot(history.history['val_acc'], label='test')
@@ -286,18 +304,15 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
     # pyplot.show()
 
     # Model evaluieren
-    trainScore = model.evaluate(trainX, trainY, verbose=0)
+    trainScore = best_model.evaluate(trainX, trainY, verbose=0)
     print('Train Score: ', trainScore)
-    testScore = model.evaluate(testX, testY, verbose=0)
+    testScore = best_model.evaluate(testX, testY, verbose=0)
     print('Test Score: ', testScore)
 
-    return model
+    return best_model
 
 
-model1 = mlp_multivariate(10, 1, 1, 1000, 64)
-mlp_multivariate(10, 1, 1, 1000, 64)
-mlp_multivariate(13, 1, 1, 1000, 64)
-mlp_multivariate(13, 1, 1, 1000, 64)
+# model1 = mlp_multivariate(13, 1, 1, 1000, 64)
 # model1.save('mlp_reg_76421_1000_64.h5')
 
 # model1 = mlp_multivariate_trend(13, 1, 1, 1000, 64)
@@ -313,7 +328,7 @@ def run_full_prediction():
     batch = 64
 
     # Architektur der hidden layer (für die Ablage, manuell anpassen!)
-    architecture = '65321L'
+    architecture = '7521L'
 
     for run in range(4):
         print("------------- / ", run, " / -------------")
@@ -346,7 +361,7 @@ def run_full_prediction():
             str(sequence[0]) + '_' + str(numberEpochs) + '_' + str(run) + '.h5')
 
 
-# run_full_prediction()
+run_full_prediction()
 
 ##################################################################################
 ##################################################################################

@@ -534,7 +534,7 @@ def rsi(data, periods=14, close_col="Close"):
     #data['rsi'] = data['rsi_u'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean() / (data['rsi_u'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean() + data['rsi_d'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean())
     data['rsi'] = (100 - (100 / (1 + (data['rsi_u'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean() / data['rsi_d'].ewm(ignore_na=False, min_periods=0, com=periods, adjust=True).mean()))))
 
-    print(data[["Close","rsi_u","rsi_d","rsi"]].head(50))
+    # print(data[["Close","rsi_u","rsi_d","rsi"]].head(50))
     data = data.drop(['rsi_u', 'rsi_d'], axis=1)
         
     return data

@@ -3,6 +3,7 @@ import matplotlib.pylab as plt
 import numpy
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
+import dataprep.indicators as indicators
 
 
 # Klasse zum Einlesen und bearbeiten der Daten
