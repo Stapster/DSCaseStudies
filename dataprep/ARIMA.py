@@ -1,6 +1,7 @@
 ### ARIMA (Autoregressive Integrated Moving average)
 ### -> https://machinelearningmastery.com/arima-for-time-series-forecasting-with-python/
 ### -> https://medium.com/@josemarcialportilla/using-python-and-auto-arima-to-forecast-seasonal-time-series-90877adff03c
+### -> ftp://ftp.cea.fr/pub/unati/people/educhesnay/pystatml/StatisticsMachineLearningPythonDraft.pdf
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,14 +10,16 @@ import numpy as np
 
 # Data Prep
 df = pd.read_csv("BrentDataset_prep.csv")
-df = df.drop(columns=["Unnamed: 0", "Year", "Month", "Day", "Open", "High", "Low", "Volume", "Change"])
-df.index = df["Date"]
+#df = df.drop(columns=["Unnamed: 0", "Year", "Month", "Day", "Open", "High", "Low", "Volume", "Change"])
+df.index = pd.to_datetime(df["Date"])
 df = df.drop(columns=["Date"])
 df.index = pd.to_datetime(df.index)
+df = df["Close"]
 df.columns = ["Close Price"]
 
 
 ### Dayly mit ffill
+df_dayly = df.copy()
 df_dayly = df.asfreq("D")
 df_dayly = df_dayly.fillna(method="ffill")
 
@@ -65,7 +68,7 @@ def decompose(freq):
     plt.tight_layout()
     plt.show()
 
-
+decompose("W")
 
 ###  Autocorrelation
 def autocorr(freq):
@@ -112,34 +115,56 @@ def arima(freq, lag):
 #arima("M", 18) # Monthly ARIMA-Model
 
 
-# Prediction
-from statsmodels.tsa.arima_model import ARIMA
-from sklearn.metrics import mean_squared_error
+# # Prediction
+# from statsmodels.tsa.arima_model import ARIMA
+# from sklearn.metrics import mean_squared_error
+#
+# X = df_monthly.values
+#
+# size = int(len(X) * 0.66) # 2/3 & 1/3 Split
+# # Def. Train / Test
+# train, test = X[0:size], X[size:len(X)]
+#
+# # Set History, to keep track of observations
+# history = [x for x in train]
+#
+# # Make a Prediction
+# predictions = list()
+# for t in range(len(test)):
+#     model = ARIMA(history, order = (18,1,0))
+#     model_fit = model.fit(disp=0)
+#     output = model_fit.forecast()
+#     yhat = output[0]
+#     predictions.append(yhat)
+#     obs = test[t]
+#     history.append(obs)
+#     print("predicted=%f, expected=%f" % (yhat, obs))
+# error = mean_squared_error(test, predictions)
+# print("Test MSE: %.3f" % error)
+#
+# # Plot
+# plt.plot(test)
+# plt.plot(predictions, color="red")
+# plt.show()
 
-X = df_monthly.values
 
-size = int(len(X) * 0.66) # 2/3 & 1/3 Split
-# Def. Train / Test
-train, test = X[0:size], X[size:len(X)]
 
-# Set History, to keep track of observations
-history = [x for x in train]
 
-# Make a Prediction
-predictions = list()
-for t in range(len(test)):
-    model = ARIMA(history, order = (18,1,0))
-    model_fit = model.fit(disp=0)
-    output = model_fit.forecast()
-    yhat = output[0]
-    predictions.append(yhat)
-    obs = test[t]
-    history.append(obs)
-    print("predicted=%f, expected=%f" % (yhat, obs))
-error = mean_squared_error(test, predictions)
-print("Test MSE: %.3f" % error)
 
-# Plot
-plt.plot(test)
-plt.plot(predictions, color="red")
-plt.show()
+###  Autocorrelation
+
+def autocorr(freq):
+    from pandas.plotting import autocorrelation_plot
+
+    # Frequency setzen
+    df_autocorr = df_dayly.copy()
+    df_autocorr = df_autocorr.asfreq(freq)
+
+    # Model
+    autocorrelation_plot(df_autocorr)
+
+    # Plot
+    plt.show()
+
+
+# autocorr("D")
