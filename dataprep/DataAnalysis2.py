@@ -18,6 +18,7 @@ class OilData:
         self.data_original = self.data_original.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
         self.scaler_price = MinMaxScaler()
         self.scaler_volume = MinMaxScaler()
+        self.log_transformed = False
 
     def calculate_avg(self):
         # Berechnet tägliche Durchschnittspreise anhand High und Low
@@ -42,7 +43,7 @@ class OilData:
 
     def normalize(self):
         # Skalierung der Daten / fit_transform und getrennte Transformation wäre auch denkbar
-        self.scaler_price.fit(self.data["Avg"].values.reshape(-1, 1))
+        self.scaler_price.fit(self.data["Close"].values.reshape(-1, 1))
 
         self.data[["Low", "High", "Open", "Close", "Avg"]] = \
             self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Avg"]])
@@ -57,8 +58,9 @@ class OilData:
     def log_transform(self):
         # Log - Transformation auf Price- und Volume
 
-        self.data[["Low", "High", "Open", "Close", "Avg", "Volume", "Change"]] = \
-            numpy.log(self.data[["Low", "High", "Open", "Close", "Avg", "Volume", "Change"]])
+        self.data[["Low", "High", "Open", "Close"]] = \
+            numpy.log(self.data[["Low", "High", "Open", "Close"]])
+        self.log_transformed = True
 
 
 def pricerange_analysis(inputdata):
