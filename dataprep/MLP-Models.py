@@ -9,11 +9,6 @@ from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 import dataprep.DataAnalysis2 as source
 
-# TODO - Stefan - Tabelle mit Ergebnissen / Konfiguration
-# TODO - Stefan - MLP-Architektur anpassen (in Absprache mit Johannes)
-
-# data shuffle mal testweise ausschalten
-
 ################################################
 
 # Daten einlesen und data-split durchführen
@@ -59,12 +54,16 @@ trend = oil_prices.data["Trend"].values.reshape(dataset.shape[0], 1)
 change = oil_prices.data["Change"].values.reshape(dataset.shape[0], 1)
 
 # zusätzliche Indikatoren
+oil_prices.data["rsi"] = oil_prices.data["rsi"].astype(float)
+oil_prices.data["macd_val"] = oil_prices.data["macd_val"].astype(float)
+oil_prices.data["pvt"] = oil_prices.data["pvt"].astype(float)
 rsi = oil_prices.data["rsi"].values.reshape(dataset.shape[0], 1)
 macd_val = oil_prices.data["macd_val"].values.reshape(dataset.shape[0], 1)
 pvt = oil_prices.data["pvt"].values.reshape(dataset.shape[0], 1)
-rsi = numpy.log(rsi)
-macd_val = numpy.log(macd_val)
-pvt = numpy.log(pvt)
+
+# rsi = numpy.log(rsi)
+# macd_val = numpy.log(macd_val)
+# pvt = numpy.log(pvt)
 
 # Hier Features entfernen/hinzufügen
 dataset_multiv = [open_price, close_price, low_price, high_price, volume, change]
@@ -72,7 +71,7 @@ dataset_multiv_Y = trend
 dataset_multiv_Y_REG = close_price
 
 # data-split
-split = 0.6
+split = 0.8
 train_size = int(len(dataset_multiv[0]) * split)
 test_size = len(dataset_multiv[0]) - train_size
 
@@ -225,10 +224,10 @@ def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, bat
 
     # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
-    #model.add(Dense(6, activation='relu'))
-    #model.add(Dense(5, activation='relu'))
+    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
+    model.add(Dense(5, activation='relu'))
     model.add(Dense(3, activation='relu'))
+    model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence))
     model.compile(loss='mean_squared_error', optimizer='adam')
@@ -242,14 +241,14 @@ def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, bat
     del model
     best_model = load_model("model_best.hdf5")
 
-    # pyplot.plot(history.history['loss'], label='train')
-    # pyplot.plot(history.history['val_loss'], label='test')
-    # pyplot.ylim(0, 40)
-    # pyplot.xlim(0, numberEpochs)
-    # pyplot.title('Multivariates Modell: Regression (MSE) / ' + str(look_back) + ' / ' + str(forecast) + ' / '
-    #              + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
-    # pyplot.legend()
-    # pyplot.show()
+    pyplot.plot(history.history['loss'], label='train')
+    pyplot.plot(history.history['val_loss'], label='test')
+    pyplot.ylim(0, 30)
+    pyplot.xlim(0, numberEpochs)
+    pyplot.title('Multivariates Modell: Regression (MSE) / ' + str(look_back) + ' / ' + str(forecast) + ' / '
+                 + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
+    pyplot.legend()
+    pyplot.show()
 
     # Model evaluieren
     if oil_prices.log_transformed:
@@ -263,6 +262,14 @@ def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, bat
         print('Train Score: ', trainScore)
         testScore = best_model.evaluate(testX, testY, verbose=0)
         print('Test Score: ', testScore)
+
+    # Test
+    # pyplot.plot(prediction_bt, label='prediction')
+    # pyplot.plot(testY_bt, label='original')
+    # pyplot.title('Multivariates Modell: Prediction vs. Original / ' + str(look_back) + ' / ' + str(forecast) + ' / '
+    #              + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
+    # pyplot.legend()
+    # pyplot.show()
 
     return best_model
 
@@ -278,9 +285,9 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
     # Modell konfigurieren und generieren
     model = Sequential()
     model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
-    #model.add(Dense(6, activation='relu'))
-    #model.add(Dense(5, activation='relu'))
+    model.add(Dense(5, activation='relu'))
     model.add(Dense(3, activation='relu'))
+    model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -295,13 +302,13 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
     del model
     best_model = load_model("model_best.hdf5")
 
-    # pyplot.plot(history.history['acc'], label='train')
-    # pyplot.plot(history.history['val_acc'], label='test')
-    # pyplot.xlim(0, numberEpochs)
-    # pyplot.title('Multivariates Modell: Classification (ACC) / ' + str(look_back) + ' / ' + str(forecast) + ' / '
-    #              + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
-    # pyplot.legend()
-    # pyplot.show()
+    pyplot.plot(history.history['acc'], label='train')
+    pyplot.plot(history.history['val_acc'], label='test')
+    pyplot.xlim(0, numberEpochs)
+    pyplot.title('Multivariates Modell: Classification (ACC) / ' + str(look_back) + ' / ' + str(forecast) + ' / '
+                 + str(sequence) + ' / ' + str(numberEpochs) + ' / ' + str(batch))
+    pyplot.legend()
+    pyplot.show()
 
     # Model evaluieren
     trainScore = best_model.evaluate(trainX, trainY, verbose=0)
@@ -312,10 +319,10 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
     return best_model
 
 
-# model1 = mlp_multivariate(13, 1, 1, 1000, 64)
+# model1 = mlp_multivariate(13, 5, 1, 2500, 128)
 # model1.save('mlp_reg_76421_1000_64.h5')
 
-# model1 = mlp_multivariate_trend(13, 1, 1, 1000, 64)
+# model2 = mlp_multivariate_trend(13, 1, 1, 2500, 128)
 # model1.save('mlp_class_76421_1000_64.h5')
 
 
@@ -328,7 +335,7 @@ def run_full_prediction():
     batch = 64
 
     # Architektur der hidden layer (für die Ablage, manuell anpassen!)
-    architecture = '7521L'
+    architecture = '65321L_80_20'
 
     for run in range(4):
         print("------------- / ", run, " / -------------")
@@ -365,9 +372,3 @@ run_full_prediction()
 
 ##################################################################################
 ##################################################################################
-
-# andere Konfigurationen zum Testen
-
-# 1. nur sigmoid activation bei Trend
-
-# 2. tanh activation und sgd optimizer

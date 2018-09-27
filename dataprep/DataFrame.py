@@ -25,6 +25,9 @@ def dta_preparation():
     dta.Change = [x.strip("%") for x in dta.Change]     #löscht %-Zeichen aus Spalte Change für jeden Datensatz
     dta.Volume = [x.replace("-","0") for x in dta.Volume]   #ersetzt "-"-Zeichen mit "0"
     dta[["Volume"]] = dta[["Volume"]].astype(float)         #Typanpassung
+    #print(dta.loc[dta["Volume"] == 0])                     #Pre-Delete
+    dta = dta[dta.Volume != 0]                              #löscht Datensätze ohne Traidingvolumen
+    #print(dta.loc[dta["Volume"] == 0])                     #Post-Delete
     dta[["Change"]] = dta[["Change"]].astype(float)         #Typanpassung
     dta[["Year"]] = dta[["Year"]].astype(str)               #Typanpassung
     dta["Date"] = dta["Year"] + "/" + dta["Month"] + "/" + dta["Day"]       #neuer Datensatz mit Spalte Date aus Year, Month und Day
@@ -65,6 +68,5 @@ print()
 print("Rescaled data:")
 print(dta_rescaled(dta_preparation()).head())
 
-
-plt.show(plotdta(dta_preparation()))                          #Visualisierung Rohdaten
-plt.show(plotdta(dta_rescaled(dta_preparation())))             #Visualisierung skalierte Daten
+#plt.show(plotdta(dta_preparation()))                          #Visualisierung Rohdaten
+#plt.show(plotdta(dta_rescaled(dta_preparation())))             #Visualisierung skalierte Daten
