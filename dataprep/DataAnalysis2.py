@@ -1,26 +1,13 @@
 import pandas as pd
 import matplotlib.pylab as plt
+import numpy
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.tsa.arima_model import ARIMA
-
-# TODO % to decimal schon in DataFrame.py durchführen
-
-# Einfache Analysen mit Close-Preis
-# closeData = data["Close"]
-# Indizierung
-# print(closeData['2010-11-1':"2010-11-15"])
-# print(closeData[:"2008-02-10"])
-# print(closeData["2008"])
-# high_prices = data.loc[:, "High"].values
-# low_prices = data.loc[:, "Low"].values
-# mid_prices = (high_prices+low_prices)/2.0
-# split = int(mid_prices.size*0.8)
-# train_data = mid_prices[:split]
-# test_data = mid_prices[split:]
+import dataprep.indicators as indicators
 
 
+# Klasse zum Einlesen und bearbeiten der Daten
 class OilData:
-    # Test Class Oil Data
 
     def __init__(self):
         # Daten einlesen, überflüssige Spalten entfernen und Index festlegen
@@ -32,28 +19,88 @@ class OilData:
         self.data_original = self.data_original.drop(columns=["Date", "Unnamed: 0", "Year", "Month", "Day"])
         self.scaler_price = MinMaxScaler()
         self.scaler_volume = MinMaxScaler()
+        self.log_transformed = False
 
     def calculate_avg(self):
         # Berechnet tägliche Durchschnittspreise anhand High und Low
         self.data["Avg"] = pd.DataFrame((self.data["High"] + self.data["Low"]) / 2.0, index=self.data.index)
         self.data_original["Avg"] = pd.DataFrame((self.data["High"] + self.data["Low"]) / 2.0, index=self.data.index)
 
-        # Anpassung % auf dezimal -- ggf. schon in DataFrame machen
+        # Anpassung % auf dezimal -- ggf. schon vorher machen
         self.data["Change"] = self.data["Change"]/100
 
+    def calculate_trend(self):
+        # Berechnet den Trend als binäre Variable [0,1] = [fallen, steigen] anhand der change-Werte
+        change = self.data["Change"]
+        c_arr = []
+        for p in change:
+            if p >= 0:
+                c_arr.append(1)
+            else:
+                c_arr.append(0)
+
+        self.data["Trend"] = pd.DataFrame(c_arr, index=self.data.index)
+        self.data_original["Trend"] = pd.DataFrame(c_arr, index=self.data.index)
+
     def normalize(self):
-        # Skalierung der Daten: fit_transform denkbar
-        self.scaler_price.fit(self.data["Avg"].values.reshape(-1, 1))
+        # Skalierung der Daten / fit_transform und getrennte Transformation wäre auch denkbar
+        self.scaler_price.fit(self.data["Close"].values.reshape(-1, 1))
 
-        self.data[["Low", "High", "Open", "Close", "Change", "Avg"]] = \
-            self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Change", "Avg"]])
+        self.data[["Low", "High", "Open", "Close", "Avg"]] = \
+            self.scaler_price.transform(self.data[["Low", "High", "Open", "Close", "Avg"]])
 
-        # Idee hinter dem 2. Scaler: Anderer Wertebereich, getrennte Transformation macht ggf. Sinn
+        # Idee hinter dem 2. Scaler: Anderer Wertebereich, getrennte Transformation macht hier mehr Sinn
         self.scaler_volume.fit(self.data["Volume"].values.reshape(-1, 1))
         self.data["Volume"] = self.scaler_volume.transform(self.data["Volume"].values.reshape(-1, 1))
 
         # print("// Transformed Data")
-        # print(self.data[["Low", "High", "Open", "Close", "Change", "Volume", "Avg"]].head())
+        # print(self.data[["Low", "High", "Open", "Close", "Volume", "Avg"]].head())
+
+    def log_transform(self):
+        # Log - Transformation auf Price- und Volume
+
+        self.data[["Low", "High", "Open", "Close"]] = \
+            numpy.log(self.data[["Low", "High", "Open", "Close"]])
+        self.log_transformed = True
+
+    # Anfügen des Indikators "pvt" an Datensatz (Substitut für obv)
+    def pvt(self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        #del self.data["Date"]
+        self.data = indicators.price_volume_trend(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        #del self.data_original["Date"]
+        self.data_original = indicators.price_volume_trend(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace=True)
+
+
+    # Anfügen des Indikators "rsi" an Datensatz
+    def rsi(self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        #del self.data["Date"]
+        self.data = indicators.rsi(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        #del self.data_original["Date"]
+        self.data_original = indicators.rsi(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace = True)
+
+
+    # Anfügen der Indikatoren "macd_val" und "macd_signal_line" an Datensatz
+    def macd(self):
+        self.data = self.data.rename_axis("index").reset_index(drop=True)
+        # del self.data["Date"]
+        self.data = indicators.macd(self.data)
+        self.data.fillna(self.data.mean(), inplace=True)
+
+        self.data_original = self.data_original.rename_axis("index").reset_index(drop=True)
+        # del self.data_original["Date"]
+        self.data_original = indicators.macd(self.data_original)
+        self.data_original.fillna(self.data_original.mean(), inplace = True)
+
 
 
 def pricerange_analysis(inputdata):
