@@ -20,7 +20,6 @@ oil_prices.normalize()
 # print("// Read transformed data vom Pandas-Dataframe ...")
 # print(oil_prices.data.head())
 
-# TODO mit dem reshape klarkommen, recherchieren wie die aussehen sollen für entsprechende Modelle
 
 def test_basic():
     # Create your first MLP in Keras
