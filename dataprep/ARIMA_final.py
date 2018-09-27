@@ -93,9 +93,6 @@ seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))
 #             continue
 # print("Best SARIMAX{}x{}12 model - AIC:{}".format(best_pdq, best_seasonal_pdq, best_aic))
 
-# 1. (80/20) Best SARIMAX(1, 1, 0)x(0, 2, 1, 12)12 model - AIC:556.7941627545994 alt
-
-# 2. (80/20) Best SARIMAX(1, 2, 1)x(0, 2, 1, 12)12 model - AIC:556.7941627545994 alt
 
 # 3. Best SARIMAX(0, 1, 0)x(0, 2, 1, 12)12 model - AIC:537.2446934869686 neu
 
