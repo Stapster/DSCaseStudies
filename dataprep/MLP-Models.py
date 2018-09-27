@@ -22,8 +22,8 @@ oil_prices.calculate_trend()
 oil_prices.pvt()
 oil_prices.rsi()
 oil_prices.macd()
-oil_prices.normalize()
-# oil_prices.log_transform()
+# oil_prices.normalize()
+oil_prices.log_transform()
 
 # univariater Datensatz
 dataset = oil_prices.data["Avg"].values
