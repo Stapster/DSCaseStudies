@@ -224,9 +224,9 @@ def mlp_multivariate(look_back=13, forecast=1, sequence=1, numberEpochs=500, bat
 
     # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
-    model.add(Dense(5, activation='relu'))
-    model.add(Dense(3, activation='relu'))
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(4, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence))
@@ -284,9 +284,9 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
 
     # Modell konfigurieren und generieren
     model = Sequential()
-    model.add(Dense(features, input_shape=(features, look_back), activation='relu'))
-    model.add(Dense(5, activation='relu'))
-    model.add(Dense(3, activation='relu'))
+    model.add(Dense(features+1, input_shape=(features, look_back), activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(4, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Flatten())
     model.add(Dense(sequence, activation='sigmoid'))
@@ -319,11 +319,11 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
     return best_model
 
 
-# model1 = mlp_multivariate(13, 5, 1, 2500, 128)
-# model1.save('mlp_reg_76421_1000_64.h5')
+# model1 = mlp_multivariate(13, 5, 1, 1000, 64)
+# model1.save('mlp_reg_65421_80_20_1000_64.h5')
 
-# model2 = mlp_multivariate_trend(13, 1, 1, 2500, 128)
-# model1.save('mlp_class_76421_1000_64.h5')
+model2 = mlp_multivariate_trend(13, 1, 1, 1000, 64)
+model2.save('mlp_class_76421_80_20_1000_64.h5')
 
 
 def run_full_prediction():
@@ -368,7 +368,7 @@ def run_full_prediction():
             str(sequence[0]) + '_' + str(numberEpochs) + '_' + str(run) + '.h5')
 
 
-run_full_prediction()
+# run_full_prediction()
 
 ##################################################################################
 ##################################################################################
