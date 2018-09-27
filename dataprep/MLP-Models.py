@@ -22,8 +22,8 @@ oil_prices.calculate_trend()
 oil_prices.pvt()
 oil_prices.rsi()
 oil_prices.macd()
-# oil_prices.normalize()
-oil_prices.log_transform()
+oil_prices.normalize()
+# oil_prices.log_transform()
 
 # univariater Datensatz
 dataset = oil_prices.data["Avg"].values
@@ -323,6 +323,8 @@ def mlp_multivariate_trend(look_back=13, forecast=1, sequence=1, numberEpochs=50
 # model1.save('mlp_reg_65421_80_20_1000_64.h5')
 
 model2 = mlp_multivariate_trend(13, 1, 1, 1000, 64)
+mlp_multivariate_trend(13, 1, 1, 1000, 64)
+mlp_multivariate_trend(13, 1, 1, 1000, 64)
 model2.save('mlp_class_76421_80_20_1000_64.h5')
 
 
