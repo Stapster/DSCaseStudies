@@ -1,4 +1,13 @@
 # ARIMA pt. 2
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import statsmodels.tsa.api as smt
+import statsmodels.api as sm
+import seaborn as sns
+import itertools
+import sys
+
 
 # Data Import
 
@@ -58,8 +67,6 @@ pdq = list(itertools.product(p, d, q))
 seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))]
 
 
-import itertools
-import sys
 # best_aic = np.inf
 # best_pdq = None
 # best_seasonal_pdq = None
@@ -85,8 +92,9 @@ import sys
 #             continue
 # print("Best SARIMAX{}x{}12 model - AIC:{}".format(best_pdq, best_seasonal_pdq, best_aic))
 
-# 2. (80/30) Best SARIMAX(1, 1, 0)x(0, 2, 1, 12)12 model - AIC:556.7941627545994
+# 1. (80/20) Best SARIMAX(1, 1, 0)x(0, 2, 1, 12)12 model - AIC:556.7941627545994
 
+# 2. (80/20) Best SARIMAX(1, 2, 1)x(0, 2, 1, 12)12 model - AIC:556.7941627545994
 
 ########################
 
@@ -95,76 +103,74 @@ import sys
 ########################
 
 
-# define SARIMAX model and fit it to the data
-mdl = sm.tsa.statespace.SARIMAX(y_train["Close"],
-                                order=(1, 1, 0),
-                                seasonal_order=(0, 2, 1, 12),
-                                enforce_stationarity=True,
-                                enforce_invertibility=True)
-res = mdl.fit()
-
-res.plot_diagnostics(figsize=(16, 10))
-plt.tight_layout()
-#plt.show()
-
-
-########################
-
-# Modell an die Daten anpassen
-
-########################
-
-
-res = sm.tsa.statespace.SARIMAX(y_train,
-                                order=(1, 2, 1),
-                                seasonal_order=(1, 2, 0, 12),
-                                enforce_stationarity=True,
-                                enforce_invertibility=True).fit()
-
-# Prediction von 02.2016 - 02.2018
-pred = res.get_prediction(start=pd.to_datetime('2016-02-01'),
-                          end=pd.to_datetime('2018-02-01'),
-                          dynamic=True)
-
-# Erstellen der Konfidenz Intervalle
-pred_ci = pred.conf_int()
-
-# Originaler Datensatz
-y = df_monthly_copy.copy()
-
-# Plotten der Predicition
-# Originale Daten
-ax = y.loc['20080301':].plot(label='Observed', color='#006699');
-
-# Prediction mean
-pred.predicted_mean.plot(ax=ax, label='One-step Ahead Prediction', color='#ff0066');
-
-# Plotten des Konfidenzintervalls
-ax.fill_between(pred_ci.index,
-                pred_ci.iloc[:, 0],
-                pred_ci.iloc[:, 1], color='#ff0066', alpha=.25);
-
-# Styling des Plots
-# Hintergrund der Prediction wird Grau
-ax.fill_betweenx(ax.get_ylim(), pd.to_datetime('2016-02-01'), y.index[-1], alpha=.15, zorder=-1, color='grey');
-# X Label
-ax.set_xlabel('Date')
-# Y Label
-ax.set_ylabel('Close Price')
-# Legende
-plt.legend(loc='upper left')
-plt.show()
-
-
-# Werte der Prediction
-y_hat = pred.predicted_mean
-# Echte Werte ab dem 01.02.2016
-y_true = y['20160201':]
-
-
-# Mean Square Error als Gütekriterium
-import math
-mse = ((y_hat - y_true["Close"]) ** 2).mean()
-print('Prediction quality: {:.2f} MSE ({:.2f} RMSE)'.format(mse, math.sqrt(mse)))
-
-# Prediction quality: 860.26 MSE (29.33 RMSE)
+# # define SARIMAX model and fit it to the data
+# mdl = sm.tsa.statespace.SARIMAX(y_train["Close"],
+#                                 order=(1, 1, 0),
+#                                 seasonal_order=(0, 2, 1, 12),
+#                                 enforce_stationarity=True,
+#                                 enforce_invertibility=True)
+# res = mdl.fit()
+#
+# res.plot_diagnostics(figsize=(16, 10))
+# plt.tight_layout()
+# #plt.show()
+#
+#
+# ########################
+#
+# # Modell an die Daten anpassen
+#
+# ########################
+#
+#
+# res = sm.tsa.statespace.SARIMAX(y_train,
+#                                 order=(1, 1, 0),
+#                                 seasonal_order=(0, 2, 1, 12),
+#                                 enforce_stationarity=True,
+#                                 enforce_invertibility=True).fit()
+#
+# # Prediction von 02.2016 - 02.2018
+# pred = res.get_prediction(start=pd.to_datetime('2016-02-01'),
+#                           end=pd.to_datetime('2018-02-01'),
+#                           dynamic=True)
+#
+# # Erstellen der Konfidenz Intervalle
+# pred_ci = pred.conf_int()
+#
+# # Originaler Datensatz
+# y = df_monthly_copy.copy()
+#
+# # Plotten der Predicition
+# # Originale Daten
+# ax = y.loc['20080301':].plot(label='Observed', color='#006699');
+#
+# # Prediction mean
+# pred.predicted_mean.plot(ax=ax, label='One-step Ahead Prediction', color='#ff0066');
+#
+# # Plotten des Konfidenzintervalls
+# ax.fill_between(pred_ci.index,
+#                 pred_ci.iloc[:, 0],
+#                 pred_ci.iloc[:, 1], color='#ff0066', alpha=.25);
+#
+# # Styling des Plots
+# # Hintergrund der Prediction wird Grau
+# ax.fill_betweenx(ax.get_ylim(), pd.to_datetime('2016-02-01'), y.index[-1], alpha=.15, zorder=-1, color='grey');
+# # X Label
+# ax.set_xlabel('Date')
+# # Y Label
+# ax.set_ylabel('Close Price')
+# # Legende
+# plt.legend(loc='upper left')
+# plt.show()
+#
+#
+# # Werte der Prediction
+# y_hat = pred.predicted_mean
+# # Echte Werte ab dem 01.02.2016
+# y_true = y['20160201':]
+#
+#
+# # Mean Square Error als Gütekriterium
+# import math
+# mse = ((y_hat - y_true["Close"]) ** 2).mean()
+# print('Prediction quality: {:.2f} MSE ({:.2f} RMSE)'.format(mse, math.sqrt(mse)))

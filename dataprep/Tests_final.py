@@ -298,7 +298,7 @@ def decompose(freq):
 
 ### Test auf Stationarity via Augumented Dickey Fuller Test
 
-def dick(data):
+def dickey(data):
         from statsmodels.tsa.stattools import adfuller
 
         print('Results of Dickey-Fuller Test (Normal):')
@@ -310,11 +310,11 @@ def dick(data):
         print(dfoutput)
 
 # Ohne Transformation
-#dick(df_dayly)
+#dickey(df_dayly)
 
 # First order Differencing Transformation
 df_dayly_diff = np.diff(df_dayly)
-#dick(df_dayly_diff)
+#dickey(df_dayly_diff)
 # ts_plot(df_dayly_diff, 100, title="Transformierte (Differencing) Dayly Daten mit einem Lag=100")
 
 
