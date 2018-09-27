@@ -106,7 +106,7 @@ seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))
 ########################
 
 
-# define SARIMAX model and fit it to the data
+# SARIMAX an die Daten anpassen
 mdl = sm.tsa.statespace.SARIMAX(y_train["Close"],
                                 order=(0, 1, 0),
                                 seasonal_order=(0, 2, 1, 12),
