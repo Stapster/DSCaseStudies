@@ -132,8 +132,8 @@ res = sm.tsa.statespace.SARIMAX(y_train,
                                 enforce_stationarity=True,
                                 enforce_invertibility=True).fit()
 
-# Prediction von 02.2016 - 02.2018
-pred = res.get_prediction(start=pd.to_datetime('2017-02-01'),
+# Prediction von 02.2017 - 01.2018
+pred = res.get_prediction(start=pd.to_datetime('2017-01-01'),
                           end=pd.to_datetime('2018-01-01'),
                           dynamic=True)
 
